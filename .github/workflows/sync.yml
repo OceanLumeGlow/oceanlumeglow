@@ -1,0 +1,28 @@
+name: Sync VK Videos
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Запуск каждые 30 минут
+  workflow_dispatch:       # Кнопка ручного запуска в интерфейсе GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run sync script
+        env:
+          VK_TOKEN: ${{ secrets.VK_TOKEN }}
+        run: python sync.py
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add videos.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update videos.json" && git push)
