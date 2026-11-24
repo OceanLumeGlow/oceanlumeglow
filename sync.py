@@ -4,7 +4,11 @@ import json
 import urllib.request
 import urllib.parse
 
-BOT_TOKEN = os.environ["BOT_TOKEN"].strip()
+raw_token = os.environ.get("BOT_TOKEN", "")
+m = re.search(r"(\d+:[A-Za-z0-9_-]+)", raw_token)
+if not m:
+    raise RuntimeError("В секрете BOT_TOKEN не найден валидный токен")
+BOT_TOKEN = m.group(1)
 CHANNEL = "OceanLumeGlow"
 
 TAG_MAP = {
@@ -22,18 +26,18 @@ TAG_MAP = {
     "#фридайвинг": "freediving",
 }
 
+def make_tg_link(post_id):
+    return "/".join(["https://t.me", CHANNEL, str(post_id)])
+
 def tg_api(method, params=None):
     query = urllib.parse.urlencode(params) if params else ""
     url = urllib.parse.urlunparse(("https", "api.telegram.org", f"/bot{BOT_TOKEN}/{method}", "", query, ""))
     req = urllib.request.urlopen(url, timeout=20)
-    raw = req.read().decode("utf-8", errors="replace")
-    if not raw.strip():
-        raise RuntimeError(f"Empty response from Telegram. Status: {req.status}, URL host: {urllib.parse.urlparse(url).netloc}")
-    return json.loads(raw)
+    return json.loads(req.read().decode("utf-8"))
 
 def download_thumb(file_id, post_id):
     os.makedirs("thumbs", exist_ok=True)
-    local_path = f"thumbs/{post_id}.jpg"
+    local_path = "/".join(["thumbs", f"{post_id}.jpg"])
     try:
         info = tg_api("getFile", {"file_id": file_id})
         file_path = info.get("result", {}).get("file_path")
@@ -52,6 +56,7 @@ def main():
             with open("videos.json", "r", encoding="utf-8") as f:
                 for item in json.load(f):
                     if "placehold.co" not in item.get("thumb", "") and not item.get("thumb", "").startswith("data:"):
+                        item["link"] = make_tg_link(item["id"])
                         existing[item["id"]] = item
         except Exception:
             pass
@@ -115,7 +120,7 @@ def main():
             "categories": categories,
             "thumb": thumb_path,
             "duration": duration_str,
-            "link": f"https://t.me{CHANNEL}/{post_id}"
+            "link": make_tg_link(post_id)
         }
 
     if last_update_id is not None:
