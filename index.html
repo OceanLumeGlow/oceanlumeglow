@@ -9,56 +9,66 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--tg-theme-bg-color, #17212b);
-      color: var(--tg-theme-text-color, #ffffff);
+      background: #0f1923;
+      color: #ffffff;
       margin: 0; padding: 12px;
     }
     .header-card {
-      display: flex; justify-content: space-between; align-items: center;
-      background: var(--tg-theme-secondary-bg-color, #232e3c);
-      padding: 12px; border-radius: 14px; margin-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, #162635 0%, #10324a 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 12px 14px; border-radius: 16px; margin-bottom: 12px;
     }
-    .header-title { font-weight: 700; font-size: 15px; }
-    .header-sub { font-size: 12px; color: var(--tg-theme-hint-color, #8e9ba8); margin-top: 2px; }
+    .header-title { font-weight: 700; font-size: 16px; letter-spacing: 0.2px; }
+    .header-sub { font-size: 12px; color: #8fa6bc; margin-top: 3px; line-height: 1.3; }
     .sub-btn {
-      background: var(--tg-theme-button-color, #2ea6ff);
-      color: var(--tg-theme-button-text-color, #ffffff);
-      border: none; padding: 8px 14px; border-radius: 10px;
+      background: #2ea6ff; color: #ffffff;
+      border: none; padding: 8px 14px; border-radius: 12px;
       font-weight: 600; font-size: 13px; cursor: pointer; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(46, 166, 255, 0.3);
     }
     .tabs {
-      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px;
+      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 12px;
       scrollbar-width: none;
     }
     .tabs::-webkit-scrollbar { display: none; }
     .tab {
-      background: var(--tg-theme-secondary-bg-color, #232e3c);
-      color: var(--tg-theme-text-color, #ffffff);
-      border: none; padding: 8px 14px; border-radius: 20px;
-      font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+      background: #182533; color: #c8d6e5;
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 7px 11px; border-radius: 20px;
+      font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap;
+      flex-shrink: 0;
     }
     .tab.active {
-      background: var(--tg-theme-button-color, #2ea6ff);
-      color: var(--tg-theme-button-text-color, #ffffff);
+      background: #2ea6ff; color: #ffffff; border-color: #2ea6ff;
     }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .card {
-      background: var(--tg-theme-secondary-bg-color, #232e3c);
-      border-radius: 12px; overflow: hidden; cursor: pointer;
+      background: #182533;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; overflow: hidden; cursor: pointer;
       display: flex; flex-direction: column;
+      transition: transform 0.15s ease;
     }
-    .thumb-wrap { position: relative; width: 100%; aspect-ratio: 4/5; background: #0e1621; }
+    .card:active { transform: scale(0.98); }
+    .thumb-wrap {
+      position: relative; width: 100%; aspect-ratio: 4/5;
+      background: linear-gradient(160deg, #102a43 0%, #091826 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
     .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-fallback { font-size: 32px; opacity: 0.7; }
     .duration {
-      position: absolute; bottom: 6px; right: 6px;
-      background: rgba(0,0,0,0.75); color: #fff;
-      font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 500;
+      position: absolute; bottom: 8px; right: 8px;
+      background: rgba(9, 18, 28, 0.78); backdrop-filter: blur(4px);
+      color: #fff; font-size: 11px; padding: 3px 7px; border-radius: 8px; font-weight: 600;
     }
     .card-title {
-      padding: 8px 10px; font-size: 13px; font-weight: 500; line-height: 1.3;
+      padding: 9px 10px; font-size: 13px; font-weight: 500; line-height: 1.35;
+      color: #f0f4f8;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .empty { grid-column: 1 / -1; text-align: center; padding: 40px 0; opacity: 0.6; font-size: 14px; }
+    .empty { grid-column: 1 / -1; text-align: center; padding: 40px 0; color: #8fa6bc; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -84,9 +94,22 @@
 
   <script>
     const tg = window.Telegram && window.Telegram.WebApp;
-    if (tg) tg.expand();
+    if (tg) {
+      tg.expand();
+      if (tg.setHeaderColor) tg.setHeaderColor('#0f1923');
+      if (tg.setBackgroundColor) tg.setBackgroundColor('#0f1923');
+    }
 
     let allVideos = [];
+
+    function cleanTitle(raw, categories) {
+      const noTags = (raw || '').replace(/#[a-zA-Zа-яА-ЯёЁ0-9_]+/g, '').trim();
+      if (noTags && !noTags.startsWith('Видео #')) return noTags;
+      if (categories && categories.includes('snorkeling')) return 'Подводный мир 🐠';
+      if (categories && categories.includes('diving')) return 'Дайвинг 🤿';
+      if (categories && categories.includes('freediving')) return 'Фридайвинг 🫁';
+      return 'Океан и подводный мир 🌊';
+    }
 
     async function loadVideos() {
       try {
@@ -107,12 +130,14 @@
       }
       grid.innerHTML = list.map(function(v) {
         const durBadge = v.duration ? '<span class="duration">' + v.duration + '</span>' : '';
+        const title = cleanTitle(v.title, v.categories);
+        const imgHtml = v.thumb
+          ? '<img src="' + v.thumb + '" loading="lazy" alt="" onerror="this.outerHTML=\'<span class=thumb-fallback>🌊</span>\'">'
+          : '<span class="thumb-fallback">🌊</span>';
+
         return '<div class="card" onclick="openTgLink(\'' + v.link + '\')">' +
-          '<div class="thumb-wrap">' +
-            '<img src="' + v.thumb + '" loading="lazy" alt="">' +
-            durBadge +
-          '</div>' +
-          '<div class="card-title">' + v.title + '</div>' +
+          '<div class="thumb-wrap">' + imgHtml + durBadge + '</div>' +
+          '<div class="card-title">' + title + '</div>' +
         '</div>';
       }).join('');
     }
