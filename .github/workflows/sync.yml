@@ -17,7 +17,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Run sync script
-        run: python sync.py
+        run: |
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+          python sync.py
       - name: Commit and push if changed
         run: |
           git config --local user.email "action@github.com"
