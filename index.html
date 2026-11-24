@@ -108,8 +108,11 @@
     }
 
     function openChannel() {
-      openTgLink(['https://t.me', CHANNEL].join('/'));
+      const latestId = allVideos.length ? allVideos[0].id : '';
+      const url = latestId ? ['https://t.me', CHANNEL, latestId].join('/') : ['https://t.me', CHANNEL].join('/');
+      openTgLink(url);
     }
+
 
     function openTgLink(url) {
       const tg = window.Telegram && window.Telegram.WebApp;
