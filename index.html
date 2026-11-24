@@ -26,21 +26,21 @@
       font-weight: 600; font-size: 13px; cursor: pointer; flex-shrink: 0;
     }
     .tabs {
-      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 12px;
+      display: flex; gap: 5px; overflow-x: auto; padding-bottom: 12px;
       scrollbar-width: none;
     }
     .tabs::-webkit-scrollbar { display: none; }
     .tab {
       background: #182533; color: #c8d6e5;
       border: 1px solid rgba(255,255,255,0.06);
-      padding: 7px 11px; border-radius: 20px;
-      font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap;
+      padding: 6px 9px; border-radius: 18px;
+      font-size: 11.5px; font-weight: 500; cursor: pointer; white-space: nowrap;
       flex-shrink: 0;
     }
     .tab.active {
       background: #2ea6ff; color: #ffffff; border-color: #2ea6ff;
     }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
     .card {
       background: #182533;
       border: 1px solid rgba(255,255,255,0.06);
@@ -100,13 +100,10 @@
       }
     }
 
-    function cleanTitle(raw, categories) {
+    function cleanTitle(raw) {
       const noTags = (raw || '').replace(/#[a-zA-Zа-яА-ЯёЁ0-9_]+/g, '').trim();
-      if (noTags && !noTags.startsWith('Видео #')) return noTags;
-      if (categories && categories.includes('snorkeling')) return 'Подводный мир 🐠';
-      if (categories && categories.includes('diving')) return 'Дайвинг 🤿';
-      if (categories && categories.includes('freediving')) return 'Фридайвинг 🫁';
-      return 'Океан и подводный мир 🌊';
+      if (!noTags || noTags.startsWith('Видео #')) return '';
+      return noTags;
     }
 
     async function loadVideos() {
@@ -128,14 +125,15 @@
       }
       grid.innerHTML = list.map(function(v) {
         const durBadge = v.duration ? '<span class="duration">' + v.duration + '</span>' : '';
-        const title = cleanTitle(v.title, v.categories);
+        const title = cleanTitle(v.title);
+        const titleHtml = title ? '<div class="card-title">' + title + '</div>' : '';
         const imgHtml = v.thumb
           ? '<img src="' + v.thumb + '" loading="lazy" alt="" onerror="this.outerHTML=\'<span class=thumb-fallback>🌊</span>\'">'
           : '<span class="thumb-fallback">🌊</span>';
 
         return '<div class="card" onclick="openTgLink(\'' + v.link + '\')">' +
           '<div class="thumb-wrap">' + imgHtml + durBadge + '</div>' +
-          '<div class="card-title">' + title + '</div>' +
+          titleHtml +
         '</div>';
       }).join('');
     }
