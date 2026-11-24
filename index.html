@@ -83,19 +83,92 @@
   </div>
 
   <script>
+    const CHANNEL = 'OceanLumeGlow';
+    const TAG_MAP = {
+      '#рыбки': 'snorkeling',
+      '#снорклинг': 'snorkeling',
+      '#дайвинг': 'diving',
+      '#фридайвинг': 'freediving'
+    };
+
     const tg = window.Telegram.WebApp;
     tg.expand();
 
     let allVideos = [];
 
     async function loadVideos() {
-      try {
-        const res = await fetch('./videos.json?v=' + Date.now());
-        allVideos = await res.json();
-        render(allVideos);
-      } catch (e) {
-        document.getElementById('grid').innerHTML = '<div class="empty">Видео скоро появятся...</div>';
+      const targetUrl = encodeURIComponent(`https://t.me{CHANNEL}`);
+      const proxies = [
+        `https://allorigins.win{targetUrl}`,
+        `https://corsproxy.io{targetUrl}`
+      ];
+
+      let html = '';
+      for (const proxyUrl of proxies) {
+        try {
+          const res = await fetch(proxyUrl);
+          if (res.ok) {
+            html = await res.text();
+            if (html.includes('tgme_widget_message')) break;
+          }
+        } catch (e) {}
       }
+
+      if (!html) {
+        document.getElementById('grid').innerHTML = '<div class="empty">Не удалось загрузить ленту канала</div>';
+        return;
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const wraps = doc.querySelectorAll('.tgme_widget_message_wrap');
+      const parsed = [];
+
+      wraps.forEach(wrap => {
+        const msgEl = wrap.querySelector('.tgme_widget_message');
+        const thumbEl = wrap.querySelector('.tgme_widget_message_video_thumb');
+        if (!msgEl || !thumbEl) return;
+
+        const dataPost = msgEl.getAttribute('data-post') || '';
+        const postId = parseInt(dataPost.split('/')[1], 10);
+        if (!postId) return;
+
+        const style = thumbEl.getAttribute('style') || '';
+        const match = style.match(/url\(['"]?([^'")]+)['"]?\)/);
+        const thumb = match ? match[1] : '';
+
+        const durEl = wrap.querySelector('.message_video_duration');
+        const duration = durEl ? durEl.textContent.trim() : '';
+
+        const textEl = wrap.querySelector('.tgme_widget_message_text');
+        const rawText = textEl ? textEl.innerText : '';
+        const lowerText = rawText.toLowerCase();
+
+        const categories = [];
+        for (const [tag, cat] of Object.entries(TAG_MAP)) {
+          if (lowerText.includes(tag) && !categories.includes(cat)) {
+            categories.push(cat);
+          }
+        }
+
+        let cleanText = rawText;
+        for (const tag of Object.keys(TAG_MAP)) {
+          cleanText = cleanText.replace(new RegExp(tag, 'gi'), '');
+        }
+        const firstLine = cleanText.split('\n').map(s => s.trim()).find(Boolean) || `Видео #${postId}`;
+
+        parsed.push({
+          id: postId,
+          title: firstLine,
+          categories,
+          thumb,
+          duration,
+          link: `https://t.me{CHANNEL}/${postId}`
+        });
+      });
+
+      allVideos = parsed.sort((a, b) => b.id - a.id);
+      render(allVideos);
     }
 
     function render(list) {
