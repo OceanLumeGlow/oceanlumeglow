@@ -113,7 +113,6 @@
       openTgLink(url);
     }
 
-
     function openTgLink(url) {
       const tg = window.Telegram && window.Telegram.WebApp;
       if (tg && tg.openTelegramLink) {
@@ -129,12 +128,23 @@
       return noTags;
     }
 
+    const startTab = new URLSearchParams(window.location.search).get('tab');
+    if (startTab) {
+      const targetBtn = Array.from(document.querySelectorAll('.tab')).find(function(b) {
+        return (b.getAttribute('onclick') || '').includes("'" + startTab + "'");
+      });
+      if (targetBtn) {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        targetBtn.classList.add('active');
+      }
+    }
+
     async function loadVideos() {
       try {
         const res = await fetch('./videos.json?v=' + Date.now());
         if (!res.ok) throw new Error();
         allVideos = await res.json();
-        render(allVideos);
+        render(startTab && startTab !== 'all' ? allVideos.filter(function(v) { return v.categories.includes(startTab); }) : allVideos);
       } catch (e) {
         document.getElementById('grid').innerHTML = '<div class="empty">Видео скоро появятся</div>';
       }
