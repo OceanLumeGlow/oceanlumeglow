@@ -91,30 +91,31 @@
       '#фридайвинг': 'freediving'
     };
 
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) tg.expand();
 
     let allVideos = [];
 
     async function loadVideos() {
       const targetUrl = encodeURIComponent(`https://t.me{CHANNEL}`);
-      const proxies = [
-        `https://allorigins.win{targetUrl}`,
-        `https://corsproxy.io{targetUrl}`
-      ];
-
       let html = '';
-      for (const proxyUrl of proxies) {
+
+      try {
+        const res = await fetch(`https://allorigins.win{targetUrl}`);
+        if (res.ok) {
+          const data = await res.json();
+          html = data.contents || '';
+        }
+      } catch (e) {}
+
+      if (!html) {
         try {
-          const res = await fetch(proxyUrl);
-          if (res.ok) {
-            html = await res.text();
-            if (html.includes('tgme_widget_message')) break;
-          }
+          const res2 = await fetch(`https://corsproxy.io{targetUrl}`);
+          if (res2.ok) html = await res2.text();
         } catch (e) {}
       }
 
-      if (!html) {
+      if (!html || !html.includes('tgme_widget_message')) {
         document.getElementById('grid').innerHTML = '<div class="empty">Не удалось загрузить ленту канала</div>';
         return;
       }
@@ -130,12 +131,12 @@
         if (!msgEl || !thumbEl) return;
 
         const dataPost = msgEl.getAttribute('data-post') || '';
-        const postId = parseInt(dataPost.split('/')[1], 10);
+        const postId = parseInt(dataPost.split('/').at(1), 10);
         if (!postId) return;
 
         const style = thumbEl.getAttribute('style') || '';
         const match = style.match(/url\(['"]?([^'")]+)['"]?\)/);
-        const thumb = match ? match[1] : '';
+        const thumb = match ? match.at(1) : '';
 
         const durEl = wrap.querySelector('.message_video_duration');
         const duration = durEl ? durEl.textContent.trim() : '';
@@ -195,7 +196,7 @@
     }
 
     function openTgLink(url) {
-      if (tg.initData) tg.openTelegramLink(url);
+      if (tg && tg.initData) tg.openTelegramLink(url);
       else window.open(url, '_blank');
     }
 
