@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>OceanLumeGlow</title>
-  <script src="https://telegram.org"></script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
@@ -25,7 +24,6 @@
       background: #2ea6ff; color: #ffffff;
       border: none; padding: 8px 14px; border-radius: 12px;
       font-weight: 600; font-size: 13px; cursor: pointer; flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(46, 166, 255, 0.3);
     }
     .tabs {
       display: flex; gap: 6px; overflow-x: auto; padding-bottom: 12px;
@@ -48,9 +46,7 @@
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 14px; overflow: hidden; cursor: pointer;
       display: flex; flex-direction: column;
-      transition: transform 0.15s ease;
     }
-    .card:active { transform: scale(0.98); }
     .thumb-wrap {
       position: relative; width: 100%; aspect-ratio: 4/5;
       background: linear-gradient(160deg, #102a43 0%, #091826 100%);
@@ -60,7 +56,7 @@
     .thumb-fallback { font-size: 32px; opacity: 0.7; }
     .duration {
       position: absolute; bottom: 8px; right: 8px;
-      background: rgba(9, 18, 28, 0.78); backdrop-filter: blur(4px);
+      background: rgba(9, 18, 28, 0.78);
       color: #fff; font-size: 11px; padding: 3px 7px; border-radius: 8px; font-weight: 600;
     }
     .card-title {
@@ -93,14 +89,16 @@
   </div>
 
   <script>
-    const tg = window.Telegram && window.Telegram.WebApp;
-    if (tg) {
-      tg.expand();
-      if (tg.setHeaderColor) tg.setHeaderColor('#0f1923');
-      if (tg.setBackgroundColor) tg.setBackgroundColor('#0f1923');
-    }
-
     let allVideos = [];
+
+    function initTg() {
+      const tg = window.Telegram && window.Telegram.WebApp;
+      if (tg) {
+        tg.expand();
+        if (tg.setHeaderColor) tg.setHeaderColor('#0f1923');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#0f1923');
+      }
+    }
 
     function cleanTitle(raw, categories) {
       const noTags = (raw || '').replace(/#[a-zA-Zа-яА-ЯёЁ0-9_]+/g, '').trim();
@@ -149,11 +147,13 @@
     }
 
     function openTgLink(url) {
+      const tg = window.Telegram && window.Telegram.WebApp;
       if (tg && tg.initData) tg.openTelegramLink(url);
       else window.open(url, '_blank');
     }
 
     loadVideos();
   </script>
+  <script src="https://telegram.org" async onload="initTg()"></script>
 </body>
 </html>
