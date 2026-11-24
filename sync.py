@@ -45,8 +45,8 @@ def download_thumb(file_id, post_id):
             dl_url = urllib.parse.urlunparse(("https", "api.telegram.org", f"/file/bot{BOT_TOKEN}/{file_path}", "", "", ""))
             urllib.request.urlretrieve(dl_url, local_path)
             return local_path
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Thumb error for {post_id}: {e}")
     return ""
 
 def main():
@@ -61,71 +61,74 @@ def main():
         except Exception:
             pass
 
-    data = tg_api("getUpdates", {"limit": 100})
-    updates = data.get("result", [])
-    last_update_id = None
+    offset = None
+    while True:
+        params = {"limit": 100}
+        if offset is not None:
+            params["offset"] = offset
+        data = tg_api("getUpdates", params)
+        updates = data.get("result", [])
+        if not updates:
+            break
 
-    for upd in updates:
-        last_update_id = upd["update_id"]
-        msg = upd.get("channel_post") or upd.get("edited_channel_post") or upd.get("message")
-        if not msg:
-            continue
+        for upd in updates:
+            offset = upd["update_id"] + 1
+            msg = upd.get("channel_post") or upd.get("edited_channel_post") or upd.get("message")
+            if not msg:
+                continue
 
-        post_id = None
-        if upd.get("channel_post") or upd.get("edited_channel_post"):
-            chat_user = msg.get("chat", {}).get("username", "")
-            if chat_user.lower() == CHANNEL.lower():
+            post_id = None
+            if upd.get("channel_post") or upd.get("edited_channel_post"):
                 post_id = msg.get("message_id")
-        elif msg.get("forward_origin", {}).get("type") == "channel":
-            fwd = msg["forward_origin"]
-            if fwd.get("chat", {}).get("username", "").lower() == CHANNEL.lower():
-                post_id = fwd.get("message_id")
+            elif msg.get("forward_origin"):
+                post_id = msg["forward_origin"].get("message_id")
+            elif msg.get("forward_from_message_id"):
+                post_id = msg.get("forward_from_message_id")
 
-        if not post_id:
-            continue
+            media = msg.get("video") or msg.get("animation") or msg.get("document") or msg.get("video_note")
+            print("UPDATE:", "post_id=", post_id, "keys=", list(msg.keys()))
 
-        video = msg.get("video") or msg.get("animation")
-        if not video:
-            continue
+            if not post_id or not media:
+                continue
 
-        caption = msg.get("caption") or msg.get("text") or ""
-        lower_text = caption.lower()
+            caption = msg.get("caption") or msg.get("text") or ""
+            lower_text = caption.lower()
 
-        categories = []
-        for tag, cat in TAG_MAP.items():
-            if tag in lower_text and cat not in categories:
-                categories.append(cat)
+            categories = []
+            for tag, cat in TAG_MAP.items():
+                if tag in lower_text and cat not in categories:
+                    categories.append(cat)
 
-        clean_text = caption
-        for tag in TAG_MAP:
-            clean_text = re.sub(re.escape(tag), "", clean_text, flags=re.IGNORECASE)
-        clean_text = re.sub(r'\n\s*\n', '\n\n', clean_text).strip()
+            clean_text = caption
+            for tag in TAG_MAP:
+                clean_text = re.sub(re.escape(tag), "", clean_text, flags=re.IGNORECASE)
+            clean_text = re.sub(r'\n\s*\n', '\n\n', clean_text).strip()
 
-        title = next((line.strip() for line in clean_text.split('\n') if line.strip()), f"Видео #{post_id}")
+            title = next((line.strip() for line in clean_text.split('\n') if line.strip()), f"Видео #{post_id}")
 
-        dur = video.get("duration", 0)
-        mins, secs = divmod(dur, 60)
-        duration_str = f"{mins}:{secs:02d}" if dur else ""
+            dur = media.get("duration", 0)
+            mins, secs = divmod(dur, 60)
+            duration_str = f"{mins}:{secs:02d}" if dur else ""
 
-        thumb_path = existing.get(post_id, {}).get("thumb", "")
-        thumb_obj = video.get("thumbnail") or video.get("thumb")
-        if thumb_obj and thumb_obj.get("file_id"):
-            downloaded = download_thumb(thumb_obj["file_id"], post_id)
-            if downloaded:
-                thumb_path = downloaded
+            thumb_path = existing.get(post_id, {}).get("thumb", "")
+            thumb_obj = media.get("thumbnail") or media.get("thumb")
+            if thumb_obj and thumb_obj.get("file_id"):
+                downloaded = download_thumb(thumb_obj["file_id"], post_id)
+                if downloaded:
+                    thumb_path = downloaded
 
-        existing[post_id] = {
-            "id": post_id,
-            "title": title,
-            "categories": categories,
-            "thumb": thumb_path,
-            "duration": duration_str,
-            "link": make_tg_link(post_id)
-        }
+            existing[post_id] = {
+                "id": post_id,
+                "title": title,
+                "categories": categories,
+                "thumb": thumb_path,
+                "duration": duration_str,
+                "link": make_tg_link(post_id)
+            }
 
-    if last_update_id is not None:
+    if offset is not None:
         try:
-            tg_api("getUpdates", {"offset": last_update_id + 1, "limit": 1})
+            tg_api("getUpdates", {"offset": offset, "limit": 1})
         except Exception:
             pass
 
