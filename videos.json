@@ -1,0 +1,18 @@
+[
+  {
+    "id": 10,
+    "title": "Крылатка на рифе",
+    "categories": ["snorkeling"],
+    "thumb": "https://placehold.co",
+    "duration": "0:37",
+    "link": "https://t.me"
+  },
+  {
+    "id": 9,
+    "title": "Базовый курс L1",
+    "categories": ["freediving"],
+    "thumb": "https://placehold.co",
+    "duration": "0:14",
+    "link": "https://t.me"
+  }
+]
