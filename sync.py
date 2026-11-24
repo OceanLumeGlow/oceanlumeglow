@@ -22,7 +22,7 @@ TAG_MAP = {
 }
 
 def tg_api(method, params=None):
-    base = "https://telegram.org" + BOT_TOKEN + "/" + method
+    base = "/".join(["https://telegram.org", "bot" + BOT_TOKEN, method])
     if params:
         query = "&".join(f"{k}={v}" for k, v in params.items())
         base = base + "?" + query
@@ -36,7 +36,7 @@ def download_thumb(file_id, post_id):
         info = tg_api("getFile", {"file_id": file_id})
         file_path = info.get("result", {}).get("file_path")
         if file_path:
-            dl_url = "https://telegram.org" + BOT_TOKEN + "/" + file_path
+            dl_url = "/".join(["https://telegram.org", "bot" + BOT_TOKEN, file_path])
             urllib.request.urlretrieve(dl_url, local_path)
             return local_path
     except Exception:
