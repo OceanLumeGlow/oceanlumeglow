@@ -3,7 +3,7 @@ import re
 import json
 import urllib.request
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
+BOT_TOKEN = os.environ["BOT_TOKEN"].strip()
 CHANNEL = "OceanLumeGlow"
 
 TAG_MAP = {
@@ -22,11 +22,11 @@ TAG_MAP = {
 }
 
 def tg_api(method, params=None):
-    url = f"https://telegram.org{BOT_TOKEN}/{method}"
+    base = "https://telegram.org" + BOT_TOKEN + "/" + method
     if params:
         query = "&".join(f"{k}={v}" for k, v in params.items())
-        url = f"{url}?{query}"
-    req = urllib.request.urlopen(url, timeout=20)
+        base = base + "?" + query
+    req = urllib.request.urlopen(base, timeout=20)
     return json.loads(req.read().decode("utf-8"))
 
 def download_thumb(file_id, post_id):
@@ -36,7 +36,7 @@ def download_thumb(file_id, post_id):
         info = tg_api("getFile", {"file_id": file_id})
         file_path = info.get("result", {}).get("file_path")
         if file_path:
-            dl_url = f"https://telegram.org{BOT_TOKEN}/{file_path}"
+            dl_url = "https://telegram.org" + BOT_TOKEN + "/" + file_path
             urllib.request.urlretrieve(dl_url, local_path)
             return local_path
     except Exception:
@@ -64,7 +64,6 @@ def main():
         if not msg:
             continue
 
-        # Определяем ID поста в канале
         post_id = None
         if upd.get("channel_post") or upd.get("edited_channel_post"):
             chat_user = msg.get("chat", {}).get("username", "")
@@ -117,7 +116,6 @@ def main():
             "link": f"https://t.me{CHANNEL}/{post_id}"
         }
 
-    # Подтверждаем обработку очереди обновлений
     if last_update_id is not None:
         try:
             tg_api("getUpdates", {"offset": last_update_id + 1, "limit": 1})
