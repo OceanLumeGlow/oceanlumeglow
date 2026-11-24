@@ -14,7 +14,7 @@ TAG_MAP = {
 
 def main():
     os.makedirs("thumbs", exist_ok=True)
-    url = f"https://t.me{CHANNEL}"
+    url = f"https://telegram.me{CHANNEL}"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     html = urllib.request.urlopen(req, timeout=20).read().decode("utf-8", errors="ignore")
 
@@ -58,8 +58,7 @@ def main():
             clean_text = re.sub(re.escape(tag), "", clean_text, flags=re.IGNORECASE)
         clean_text = re.sub(r'\n\s*\n', '\n\n', clean_text).strip()
 
-        lines = [line.strip() for line in clean_text.split('\n') if line.strip()]
-        title = lines[0] if lines else f"Видео #{post_id}"
+        title = next((line.strip() for line in clean_text.split('\n') if line.strip()), f"Видео #{post_id}")
 
         videos.append({
             "id": post_id,
