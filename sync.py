@@ -2,6 +2,7 @@ import os
 import re
 import json
 import urllib.request
+import urllib.parse
 
 BOT_TOKEN = os.environ["BOT_TOKEN"].strip()
 CHANNEL = "OceanLumeGlow"
@@ -22,12 +23,13 @@ TAG_MAP = {
 }
 
 def tg_api(method, params=None):
-    base = "/".join(["https://telegram.org", "bot" + BOT_TOKEN, method])
-    if params:
-        query = "&".join(f"{k}={v}" for k, v in params.items())
-        base = base + "?" + query
-    req = urllib.request.urlopen(base, timeout=20)
-    return json.loads(req.read().decode("utf-8"))
+    query = urllib.parse.urlencode(params) if params else ""
+    url = urllib.parse.urlunparse(("https", "api.telegram.org", f"/bot{BOT_TOKEN}/{method}", "", query, ""))
+    req = urllib.request.urlopen(url, timeout=20)
+    raw = req.read().decode("utf-8", errors="replace")
+    if not raw.strip():
+        raise RuntimeError(f"Empty response from Telegram. Status: {req.status}, URL host: {urllib.parse.urlparse(url).netloc}")
+    return json.loads(raw)
 
 def download_thumb(file_id, post_id):
     os.makedirs("thumbs", exist_ok=True)
@@ -36,7 +38,7 @@ def download_thumb(file_id, post_id):
         info = tg_api("getFile", {"file_id": file_id})
         file_path = info.get("result", {}).get("file_path")
         if file_path:
-            dl_url = "/".join(["https://telegram.org", "bot" + BOT_TOKEN, file_path])
+            dl_url = urllib.parse.urlunparse(("https", "api.telegram.org", f"/file/bot{BOT_TOKEN}/{file_path}", "", "", ""))
             urllib.request.urlretrieve(dl_url, local_path)
             return local_path
     except Exception:
