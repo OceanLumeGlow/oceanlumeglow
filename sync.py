@@ -22,8 +22,16 @@ def fetch_videos():
         "v": "5.199"
     })
     url = f"https://vk.com?{params}"
-    req = urllib.request.urlopen(url)
-    data = json.loads(req.read().decode("utf-8"))
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    )
+    raw_response = urllib.request.urlopen(request).read().decode("utf-8")
+    try:
+        data = json.loads(raw_response)
+    except json.JSONDecodeError:
+        raise RuntimeError(f"Non-JSON response from VK: {raw_response[:300]}")
+
     
     if "error" in data:
         raise RuntimeError(f"VK API Error: {data['error']}")
